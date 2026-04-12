@@ -66,6 +66,7 @@ def get_vietnam_comtrade_yoy():
 
         # 資料處理
         df = pd.DataFrame(all_data)
+        print(f"📊 成功抓取到的月份區間: {df['period'].min()} ~ {df['period'].max()}")
         df = df[['period', 'primaryValue']].copy()
         df['Date'] = pd.to_datetime(df['period'].astype(str), format='%Y%m')
         df = df.sort_values('Date', ascending=False).reset_index(drop=True)
