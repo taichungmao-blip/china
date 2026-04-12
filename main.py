@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 import yfinance as yf
 import pandas as pd
