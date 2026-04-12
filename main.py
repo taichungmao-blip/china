@@ -32,67 +32,64 @@ def get_nike_dio():
 def get_vietnam_comtrade_yoy():
     print("🔍 正在透過 UN Comtrade API 獲取越南出口數據...")
     
-    # 從環境變數讀取您在聯合國註冊的 API Key
     api_key = os.environ.get("COMTRADE_API_KEY")
     if not api_key:
         print("❌ 找不到 COMTRADE_API_KEY，請先設定環境變數。")
         return None, None
 
-    # 聯合國 Comtrade API v1 端點 (C: 商品, M: 月度資料, HS: 稅則號列)
     url = "https://comtradeapi.un.org/data/v1/get/C/M/HS"
     
-    # 自動生成過去 24 個月的查詢期間 (格式：YYYYMM)
-    # 因為聯合國數據有遞延，我們抓取長一點的區間來確保有足夠資料比對
+    # 自動生成過去 25 個月的查詢期間 (多抓一點確保基期資料存在)
     end_date = pd.Timestamp.now()
-    start_date = end_date - pd.DateOffset(months=24)
-    periods = pd.date_range(start=start_date, end=end_date, freq='ME').strftime('%Y%m').tolist()
-    period_str = ",".join(periods)
+    start_date = end_date - pd.DateOffset(months=25)
+    all_periods = pd.date_range(start=start_date, end=end_date, freq='ME').strftime('%Y%m').tolist()
+    
+    # 將期間拆分為最多 12 個月一組 (Comtrade API 的限制)
+    period_chunks = [all_periods[i:i + 12] for i in range(0, len(all_periods), 12)]
 
-    # 設定 API 查詢參數
     params = {
-        "reporterCode": "704",      # 704 代表越南 (Viet Nam)
-        "partnerCode": "0",         # 0 代表全球 (World)，也可改為 842 (美國)
-        "cmdCode": "6404",          # HS Code: 紡織面料鞋靴 (豐泰主力)
-        "flowCode": "X",            # X 代表出口 (Export)
-        "period": period_str,       # 查詢區間
+        "reporterCode": "704",      # 越南
+        "partnerCode": "0",         # 全球
+        "cmdCode": "6404",          # 紡織面料鞋靴
+        "flowCode": "X",            # 出口
         "format": "JSON"
     }
 
-    # 帶入 API 金鑰
     headers = {
         "Ocp-Apim-Subscription-Key": api_key,
         "User-Agent": "QuantBot/1.0"
     }
 
+    all_data = []
+    
     try:
-        response = requests.get(url, params=params, headers=headers, timeout=20)
-        
-        if response.status_code != 200:
-            print(f"❌ API 請求失敗，狀態碼: {response.status_code}")
-            return None, None
+        # 分批發送請求並合併資料
+        for chunk in period_chunks:
+            params["period"] = ",".join(chunk)
+            response = requests.get(url, params=params, headers=headers, timeout=20)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('data'):
+                    all_data.extend(data['data'])
+            else:
+                print(f"⚠️ API 請求失敗，狀態碼: {response.status_code}，區間: {chunk[0]}~{chunk[-1]}")
+            
+            # 避免觸發 API 頻率限制
+            time.sleep(1)
 
-        data = response.json()
-        
-        # 檢查是否有回傳資料 (data['data'] 為列表)
-        if not data.get('data') or len(data['data']) == 0:
+        if not all_data:
             print("⚠️ 聯合國資料庫目前查無越南近期的 6404 出口數據 (可能尚未更新)。")
             return None, None
 
-        # 將 JSON 轉為 Pandas DataFrame
-        df = pd.DataFrame(data['data'])
+        # 將合併後的 JSON 轉為 Pandas DataFrame
+        df = pd.DataFrame(all_data)
         
-        # 提取需要的欄位：period (年月) 與 primaryValue (美元價值)
-        # 聯合國的 primaryValue 預設單位就是「美元」
         df = df[['period', 'primaryValue']].copy()
-        
-        # 將 period (如 202305) 轉為 Datetime 以利排序
         df['Date'] = pd.to_datetime(df['period'].astype(str), format='%Y%m')
         df = df.sort_values('Date', ascending=False).reset_index(drop=True)
         
-        # 獲取資料庫中最新的一個月份
         latest = df.iloc[0]
-        
-        # 尋找正好前一年的基期資料 (位移 12 個月)
         last_year_df = df[df['Date'] == (latest['Date'] - pd.DateOffset(years=1))]
         
         if last_year_df.empty:
@@ -107,7 +104,6 @@ def get_vietnam_comtrade_yoy():
         yoy = ((latest_val - last_year_val) / last_year_val) * 100
         month_str = latest['Date'].strftime('%Y-%m')
         
-        # 將美元轉換為百萬美元 (Million USD) 方便閱讀
         print(f"✅ 最新 {month_str} 越南 6404 鞋類出口: {latest_val / 1e6:.2f} 百萬美元")
         print(f"✅ 去年同期出口: {last_year_val / 1e6:.2f} 百萬美元")
         print(f"🚀 Comtrade 權威出口 YoY: {round(yoy, 2)}%")
@@ -116,7 +112,15 @@ def get_vietnam_comtrade_yoy():
 
     except Exception as e:
         print(f"❌ 解析 Comtrade API 發生錯誤: {e}")
+        return None, Nonedef get_vietnam_comtrade_yoy():
+    print("🔍 正在透過 UN Comtrade API 獲取越南出口數據...")
+    
+    # 從環境變數讀取您在聯合國註冊的 API Key
+    api_key = os.environ.get("COMTRADE_API_KEY")
+    if not api_key:
+        print("❌ 找不到 COMTRADE_API_KEY，請先設定環境變數。")
         return None, None
+
 
 # ==========================================
 # 3. 法人策略分析矩陣 (Nike DIO vs Vietnam YoY)
