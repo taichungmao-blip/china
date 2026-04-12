@@ -180,7 +180,7 @@ def send_discord_alert(dio, yoy, month_str, status, action):
 if __name__ == "__main__":
     print("啟動【製鞋業台美股連動】分析引擎...")
     dio_val = get_nike_dio()
-    yoy_val, data_month = get_vietnam_export_yoy()
+    yoy_val, data_month = get_vietnam_comtrade_yoy()
     
     if dio_val is not None and yoy_val is not None:
         status, action = analyze_shoe_strategy(dio_val, yoy_val)
