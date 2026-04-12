@@ -45,7 +45,7 @@ def get_vietnam_comtrade_yoy():
     # 因為聯合國數據有遞延，我們抓取長一點的區間來確保有足夠資料比對
     end_date = pd.Timestamp.now()
     start_date = end_date - pd.DateOffset(months=24)
-    periods = pd.date_range(start=start_date, end=end_date, freq='M').strftime('%Y%m').tolist()
+    periods = pd.date_range(start=start_date, end=end_date, freq='ME').strftime('%Y%m').tolist()
     period_str = ",".join(periods)
 
     # 設定 API 查詢參數
