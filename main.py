@@ -112,15 +112,7 @@ def get_vietnam_comtrade_yoy():
 
     except Exception as e:
         print(f"❌ 解析 Comtrade API 發生錯誤: {e}")
-        return None, Nonedef get_vietnam_comtrade_yoy():
-    print("🔍 正在透過 UN Comtrade API 獲取越南出口數據...")
-    
-    # 從環境變數讀取您在聯合國註冊的 API Key
-    api_key = os.environ.get("COMTRADE_API_KEY")
-    if not api_key:
-        print("❌ 找不到 COMTRADE_API_KEY，請先設定環境變數。")
         return None, None
-
 
 # ==========================================
 # 3. 法人策略分析矩陣 (Nike DIO vs Vietnam YoY)
