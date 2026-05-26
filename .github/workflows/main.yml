@@ -3,7 +3,7 @@ name: CSI 300 Daily Tracker
 on:
   schedule:
     # 這裡使用 UTC 時間。UTC 08:00 = 台灣時間 16:00 (每週一到週五)
-    - cron: '0 8 * * 1-5'
+    - cron: '0 9 * * 1-5'
   # 保留 workflow_dispatch，讓你可以隨時在 GitHub 網頁上手動點擊執行
   workflow_dispatch: 
 
